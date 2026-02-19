@@ -14,7 +14,7 @@ const Header = () => {
             VALIDAÇÃO DE EXPEDIÇÃO YAB
           </h1>
           <div style={{ color: '#bdc3c7', fontSize: '1rem' }}>
-            Sistema de Conferência 200% - NF, RAN, Ordem, Volume
+        
           </div>
         </div>
       </div>

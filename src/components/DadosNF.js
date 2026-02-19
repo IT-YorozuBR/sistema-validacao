@@ -98,7 +98,7 @@ const DadosNF = ({ onSubmit }) => {
 
         <Row>
           <Col md={6} className="mb-3">
-            <Form.Label className="fw-bold">Volume da Nota:</Form.Label>
+            <Form.Label className="fw-bold">QTD Rack:</Form.Label>
             <Form.Control
               type="number"
               name="volume_nf"
@@ -111,7 +111,7 @@ const DadosNF = ({ onSubmit }) => {
               size="lg"
             />
             <Form.Text>
-              <strong>VOLUME:</strong> Número do volume/sequência da nota
+              <strong>QTD Rack:</strong> Número da quantidade de rack/sequência da nota
             </Form.Text>
           </Col>
 

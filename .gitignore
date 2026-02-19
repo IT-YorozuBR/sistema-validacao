@@ -17,7 +17,7 @@ node_modules/
 *.db
 *.sqlite
 *.sqlite3
-
+*.zip
 # Logs
 logs/
 *.log

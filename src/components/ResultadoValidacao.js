@@ -29,7 +29,7 @@ const ResultadoValidacao = ({ dadosNF, etiquetaProducao, etiquetaExpedicao, onFi
             </div>
 
             <div className="dado-item">
-              <div className="info-label">Volume</div>
+              <div className="info-label">QTD Rack</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#3498db' }}>
                 {dadosNF.volume_nf}
               </div>
@@ -96,7 +96,7 @@ const ResultadoValidacao = ({ dadosNF, etiquetaProducao, etiquetaExpedicao, onFi
                 <p className="mb-0">
                   <strong>NF:</strong> {dadosNF.numero_nf} | 
                   <strong> RAN:</strong> {dadosNF.numero_ran} | 
-                  <strong> Volume:</strong> {dadosNF.volume_nf}<br />
+                  <strong> QTD Rack:</strong> {dadosNF.volume_nf}<br />
                   <strong>RESULTADO:</strong> Part Number encontrado na etiqueta de expedição<br />
                   <strong>STATUS:</strong> CARGA LIBERADA PARA DESPACHO<br />
                   <strong>POSIÇÃO:</strong> Caractere {resultado.posicao + 1} do código
@@ -110,7 +110,7 @@ const ResultadoValidacao = ({ dadosNF, etiquetaProducao, etiquetaExpedicao, onFi
                 <p className="mb-0">
                   <strong>NF:</strong> {dadosNF.numero_nf} | 
                   <strong> RAN:</strong> {dadosNF.numero_ran} | 
-                  <strong> Volume:</strong> {dadosNF.volume_nf}<br />
+                  <strong> QTD Rack:</strong> {dadosNF.volume_nf}<br />
                   <strong>RESULTADO:</strong> Part Number NÃO encontrado na etiqueta de expedição<br />
                   <strong>STATUS:</strong> CARGA NÃO LIBERADA - VERIFIQUE AS ETIQUETAS<br />
                   <strong>DETALHES:</strong> O sistema buscou "{etiquetaProducao.part_number}" no código fornecido

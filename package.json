@@ -1,5 +1,6 @@
 {
   "name": "sistema-validacao-react",
+  "proxy": "http://localhost:3001",
   "version": "7.0.0",
   "private": true,
   "dependencies": {

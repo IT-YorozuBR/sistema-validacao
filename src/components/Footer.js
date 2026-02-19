@@ -12,7 +12,7 @@ const Footer = () => {
       fontSize: '0.9rem'
     }}>
       <div className="container text-center">
-        Desenvolvido pela TI - Yorozu do Brasil - {ano} • Validação Completa com NF, RAN, Ordem e Volume
+        Desenvolvido pela TI - Yorozu do Brasil - {ano}
       </div>
     </div>
   );

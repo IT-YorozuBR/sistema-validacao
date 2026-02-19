@@ -26,7 +26,7 @@ const TabelaValidacoes = ({ registros }) => {
             <th>Número NF</th>
             <th>RAN</th>
             <th>Número Ordem</th>
-            <th>Volume</th>
+            <th>QTD Rack</th>
             <th>Part Number Produção</th>
             <th>Part Number Expedição</th>
             <th>Resultado</th>
