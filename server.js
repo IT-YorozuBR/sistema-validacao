@@ -15,24 +15,26 @@ dotenv.config();
 // ✅ Configurar __dirname e __filename para ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const express = require('express');
+const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.SERVER_PORT || process.env.PORT || 3001;
 const LOG_DIR = path.join(__dirname, 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'sistema_validacao.log');
 
-// ✅ Trust proxy para Render
+// ✅ Trust proxy
 app.set('trust proxy', 1);
 
-// Middleware
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  alloworigins: ['http://localhost:3000', 'https://sistema-validacao.onrender.com']
 }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'build')));
 
 // ✅ Configurar logs em arquivo

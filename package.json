@@ -1,6 +1,6 @@
 {
   "name": "sistema-validacao-react",
-  "proxy": "http://localhost:3001",
+  "proxy": "https://sistema-validacao.onrender.com",
   "version": "7.0.0",
   "private": true,
   "dependencies": {
