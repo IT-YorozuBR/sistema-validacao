@@ -2,8 +2,11 @@ import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
 const ModalLogs = ({ show, onHide, logs, onRefresh }) => {
+  // logs é uma string com quebras de linha
+  const textoLogs = typeof logs === 'string' ? logs : '';
+
   const copiarLogs = () => {
-    navigator.clipboard.writeText(logs)
+    navigator.clipboard.writeText(textoLogs)
       .then(() => alert('Logs copiados para a área de transferência!'))
       .catch(err => console.error('Erro ao copiar:', err));
   };
@@ -25,7 +28,13 @@ const ModalLogs = ({ show, onHide, logs, onRefresh }) => {
           </Button>
         </div>
         <div className="log-content">
-          {logs}
+          {textoLogs ? (
+            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: '0.85rem' }}>
+              {textoLogs}
+            </pre>
+          ) : (
+            <p className="text-muted">Nenhum log disponível.</p>
+          )}
         </div>
       </Modal.Body>
       <Modal.Footer>

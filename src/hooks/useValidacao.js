@@ -241,7 +241,9 @@ const useValidacao = () => {
   const atualizarLogs = async () => {
     try {
       const data = await api.get('/logs');
-      setLogs(data);
+      // API retorna { total, logs: [] } — extrair só o array de strings
+      const linhas = Array.isArray(data) ? data : (data?.logs || []);
+      setLogs(linhas.join('\n'));
     } catch (error) {
       await logger.error(`Erro ao buscar logs: ${error.message}`);
     }
