@@ -1,6 +1,5 @@
 {
   "name": "sistema-validacao-react",
-  "proxy": "https://sistema-validacao.onrender.com/",
   "version": "7.0.0",
   "private": true,
   "dependencies": {
@@ -17,12 +16,13 @@
     "react-scripts": "5.0.1"
   },
   "scripts": {
-    "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
+    "start": "node server.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node server.js",
-    "dev": "concurrently \"npm run server\" \"npm start\""
+    "dev:client": "react-scripts start",
+    "dev:server": "node server.js",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
   },
   "eslintConfig": {
     "extends": [
