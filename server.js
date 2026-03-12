@@ -1,158 +1,286 @@
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import database from './src/services/database.js';
+import logger from './src/services/logger.js';
+import validacaoRoutes from './src/routes/validacaoRoutes.js';
+import healthRoutes from './src/routes/healthRoutes.js';
+
+dotenv.config();
+
+// ✅ Configurar __dirname e __filename para ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.SERVER_PORT || 3001;
-const DB_FILE = path.join(__dirname, 'ValidacaoPN.db');
+const PORT = process.env.SERVER_PORT || process.env.PORT || 3001;
 const LOG_DIR = path.join(__dirname, 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'sistema_validacao.log');
 
+// ✅ Trust proxy para Render
+app.set('trust proxy', 1);
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Configurar logs
+// ✅ Configurar logs em arquivo
 if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
+  fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
 function logMessage(level, message) {
-    const timestamp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    const levelPadded = level.toUpperCase().padEnd(8);
-    const formattedMessage = `${timestamp} | ${levelPadded} | ${message}\n`;
-    
-    fs.appendFileSync(LOG_FILE, formattedMessage);
-    console.log(formattedMessage);
+  const timestamp = new Date().toLocaleString('pt-BR', { 
+    timeZone: 'America/Sao_Paulo' 
+  });
+  const levelPadded = level.toUpperCase().padEnd(8);
+  const formattedMessage = `${timestamp} | ${levelPadded} | ${message}\n`;
+  
+  fs.appendFileSync(LOG_FILE, formattedMessage);
+  console.log(formattedMessage);
 }
 
-// Banco de dados
-const db = new sqlite3.Database(DB_FILE);
+// ✅ Conectar ao MongoDB (usando serviço database)
+async function conectarBancoDados() {
+  try {
+    await database.connect();
+    logMessage('info', 'Conectado ao MongoDB com sucesso');
+  } catch (error) {
+    logMessage('error', `Erro ao conectar ao MongoDB: ${error.message}`);
+    process.exit(1);
+  }
+}
 
-// Criar/atualizar tabela
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS validacoes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        chave_nf TEXT,
-        numero_nf TEXT,
-        numero_ran TEXT,
-        numero_ordem TEXT,
-        volume_nf TEXT,
-        part_number1 TEXT,
-        part_number2 TEXT,
-        resultado TEXT,
-        data TEXT,
-        hora TEXT,
-        usuario TEXT,
-        codigo_expedicao TEXT
-    )`);
+// ✅ Importar modelo antigo (mantém compatibilidade)
+import Validacao from './src/models/Validacao.js';
 
-    // Verificar e adicionar colunas se necessário
-    db.all("PRAGMA table_info(validacoes)", (err, rows) => {
-        if (err) {
-            logMessage('error', `Erro ao verificar tabela: ${err.message}`);
-            return;
-        }
+// ============================================================================
+// ROTAS ANTIGAS (mantidas para compatibilidade)
+// ============================================================================
 
-        const colunasExistentes = rows.map(row => row.name);
-        const colunasNecessarias = ['chave_nf', 'numero_nf', 'numero_ran', 'numero_ordem', 'volume_nf', 'codigo_expedicao'];
-
-        colunasNecessarias.forEach(coluna => {
-            if (!colunasExistentes.includes(coluna)) {
-                db.run(`ALTER TABLE validacoes ADD COLUMN ${coluna} TEXT`, (err) => {
-                    if (err) {
-                        logMessage('error', `Erro ao adicionar coluna ${coluna}: ${err.message}`);
-                    } else {
-                        logMessage('info', `Coluna ${coluna} adicionada com sucesso`);
-                    }
-                });
-            }
-        });
-    });
-});
-
-logMessage('info', 'Servidor iniciado');
-
-// Rotas da API
-app.get('/api/validacoes', (req, res) => {
+// GET /api/validacoes - Listar com filtro
+app.get('/api/validacoes/antigo/buscar', async (req, res) => {
+  try {
     const { filtro } = req.query;
-    
-    let query = "SELECT * FROM validacoes ORDER BY id DESC";
-    let params = [];
+    let query = {};
 
     if (filtro) {
-        query = "SELECT * FROM validacoes WHERE numero_nf LIKE ? OR numero_ran LIKE ? OR numero_ordem LIKE ? OR part_number1 LIKE ? OR part_number2 LIKE ? OR resultado LIKE ? OR data LIKE ? OR hora LIKE ? OR usuario LIKE ? OR codigo_expedicao LIKE ? ORDER BY id DESC";
-        const like = `%${filtro}%`;
-        params = Array(10).fill(like);
+      const searchRegex = new RegExp(filtro, 'i');
+      query = {
+        $or: [
+          { numero_nf: searchRegex },
+          { numero_ran: searchRegex },
+          { numero_ordem: searchRegex },
+          { part_number1: searchRegex },
+          { part_number2: searchRegex },
+          { resultado: searchRegex },
+          { data: searchRegex },
+          { hora: searchRegex },
+          { usuario: searchRegex },
+          { codigo_expedicao: searchRegex }
+        ]
+      };
     }
 
-    db.all(query, params, (err, rows) => {
-        if (err) {
-            logMessage('error', `Erro ao buscar validações: ${err.message}`);
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows || []);
-    });
+    const validacoes = await Validacao.find(query).sort({ createdAt: -1 });
+    res.json(validacoes || []);
+  } catch (error) {
+    logMessage('error', `Erro ao buscar validações: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/api/validacoes', (req, res) => {
+// POST /api/validacoes - Criar validação (antigo)
+app.post('/api/validacoes/antigo/registrar', async (req, res) => {
+  try {
     const {
-        chave_nf, numero_nf, numero_ran, numero_ordem,
-        volume_nf, part_number1, part_number2, resultado,
-        usuario, codigo_expedicao
+      chave_nf, numero_nf, numero_ran, numero_ordem,
+      volume_nf, part_number1, part_number2, resultado,
+      usuario, codigo_expedicao
     } = req.body;
 
     const data = new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
     const hora = new Date().toLocaleTimeString('pt-BR');
 
-    const query = `INSERT INTO validacoes 
-        (chave_nf, numero_nf, numero_ran, numero_ordem, volume_nf, part_number1, part_number2, resultado, data, hora, usuario, codigo_expedicao) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    db.run(query, [
-        chave_nf, numero_nf, numero_ran, numero_ordem || 'N/A',
-        volume_nf, part_number1, part_number2, resultado,
-        data, hora, usuario || 'SISTEMA', codigo_expedicao
-    ], function(err) {
-        if (err) {
-            logMessage('error', `Erro ao inserir validação: ${err.message}`);
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        logMessage('info', `Validação registrada - ID: ${this.lastID}, NF: ${numero_nf}, Resultado: ${resultado}`);
-        res.json({ 
-            id: this.lastID,
-            message: 'Validação registrada com sucesso'
-        });
+    const validacao = new Validacao({
+      chave_nf,
+      numero_nf,
+      numero_ran,
+      numero_ordem: numero_ordem || 'N/A',
+      volume_nf,
+      part_number1,
+      part_number2,
+      resultado,
+      data,
+      hora,
+      usuario: usuario || 'SISTEMA',
+      codigo_expedicao
     });
+
+    const savedValidacao = await validacao.save();
+
+    logMessage('info', `Validação registrada - ID: ${savedValidacao._id}, NF: ${numero_nf}, Resultado: ${resultado}`);
+    res.json({
+      id: savedValidacao._id,
+      message: 'Validação registrada com sucesso'
+    });
+  } catch (error) {
+    logMessage('error', `Erro ao inserir validação: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
 });
 
+// GET /api/logs - Ler logs
 app.get('/api/logs', (req, res) => {
+  try {
     if (fs.existsSync(LOG_FILE)) {
-        const logs = fs.readFileSync(LOG_FILE, 'utf8');
-        res.send(logs);
+      const logs = fs.readFileSync(LOG_FILE, 'utf8');
+      const logLines = logs.split('\n').reverse();
+      res.json({
+        total: logLines.length,
+        logs: logLines.slice(0, 100) // Últimas 100 linhas
+      });
     } else {
-        res.send('Arquivo de log não encontrado.');
+      res.json({ message: 'Arquivo de log não encontrado', logs: [] });
     }
+  } catch (error) {
+    logMessage('error', `Erro ao ler logs: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
 });
 
+// POST /api/logs - Registrar log manualmente
 app.post('/api/logs', (req, res) => {
+  try {
     const { level, message } = req.body;
+    if (!level || !message) {
+      return res.status(400).json({ error: 'level e message são obrigatórios' });
+    }
     logMessage(level, message);
     res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Servir React app
+// ============================================================================
+// ROTAS NOVAS (novo sistema refatorado)
+// ============================================================================
+
+// Health check
+app.use('/api/health', healthRoutes);
+
+// Validações (novo sistema)
+app.use('/api/validacoes', validacaoRoutes);
+
+// ============================================================================
+// ROTAS GERAIS
+// ============================================================================
+
+// Rota raiz
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    mensagem: 'Sistema de Validação - MongoDB',
+    versao: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      validacoes: '/api/validacoes',
+      logs: '/api/logs',
+      legacy: {
+        buscar: '/api/validacoes/antigo/buscar',
+        registrar: '/api/validacoes/antigo/registrar'
+      }
+    }
+  });
+});
+
+// Servir React build (se existir)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  const indexPath = path.join(__dirname, 'build', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({
+      error: 'Build não encontrado',
+      message: 'Execute: npm run build'
+    });
+  }
 });
 
-app.listen(PORT, () => {
-    logMessage('info', `Servidor rodando na porta ${PORT}`);
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  logMessage('error', `Erro na aplicação: ${err.message}`);
+
+  const statusCode = err.statusCode || 500;
+  const mensagem = err.message || 'Erro interno do servidor';
+
+  res.status(statusCode).json({
+    sucesso: false,
+    erro: {
+      mensagem,
+      statusCode,
+    },
+  });
 });
+
+// 404 middleware
+app.use((req, res) => {
+  logMessage('warn', `Rota não encontrada: ${req.method} ${req.path}`);
+  res.status(404).json({
+    sucesso: false,
+    erro: {
+      mensagem: 'Rota não encontrada',
+      statusCode: 404,
+    },
+  });
+});
+
+// ============================================================================
+// INICIAR SERVIDOR
+// ============================================================================
+
+async function iniciarServidor() {
+  try {
+    await conectarBancoDados();
+    
+    app.listen(PORT, () => {
+      logMessage('info', `Servidor rodando na porta ${PORT}`);
+      logMessage('info', '--- Sistema de Validação MongoDB Iniciado ---');
+    });
+  } catch (error) {
+    logMessage('error', `Erro ao iniciar servidor: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+// Tratamento de sinais de encerramento
+process.on('SIGINT', async () => {
+  logMessage('info', 'Recebido SIGINT, encerrando...');
+  await database.disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  logMessage('info', 'Recebido SIGTERM, encerrando...');
+  await database.disconnect();
+  process.exit(0);
+});
+
+iniciarServidor();
+
+export default app;

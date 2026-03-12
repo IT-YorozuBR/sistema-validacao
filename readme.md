@@ -6,13 +6,15 @@ Sistema web para validação de Part Numbers (PN) em processos de expedição, c
 
 - **Frontend:** React 18, React-Bootstrap, Bootstrap 5, Font Awesome
 - **Backend:** Node.js, Express
-- **Banco de dados:** SQLite3
+- **Banco de dados:** MongoDB Atlas (Cloud)
+- **ODM:** Mongoose
 - **Outros:** Axios, dotenv, concurrently
 
 ## 📋 Pré-requisitos
 
 - Node.js >= 14.x
 - npm >= 6.x
+- Conta MongoDB Atlas (gratuita em https://www.mongodb.com/cloud/atlas)
 
 ## 🚀 Instalação
 
@@ -33,8 +35,11 @@ Sistema web para validação de Part Numbers (PN) em processos de expedição, c
    ```
    Edite o arquivo `.env` com suas configurações:
    ```env
-   PORT=3001
-   REACT_APP_API_URL=http://localhost:3001
+   PORT=3000
+   SERVER_PORT=3001
+   REACT_APP_API_URL=http://localhost:3001/api
+   MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster0
+   NODE_ENV=development
    ```
 
 ## ▶️ Executando o projeto
